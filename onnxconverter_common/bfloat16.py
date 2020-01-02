@@ -7,6 +7,7 @@
 import numpy as np
 import itertools
 import onnx
+import struct
 from onnx import helper
 from onnx import onnx_pb as onnx_proto
 
@@ -56,9 +57,14 @@ def convert_tensor_float_to_bfloat16(tensor):
             # convert n.raw_data to float
             float32_list = np.fromstring(tensor.raw_data, dtype='float32')
             # convert float to bfloat16
-            bfloat16_list = bfloat16(float32_list)
+            new_float32_list = float32_list.tolist()
+            bfloat16_list = []
+            for x in new_float32_list:
+                bfloat16_list.append(bfloat16(x))
             # convert bfloat16 to bytes and write back to raw_data
-            tensor.raw_data = bfloat16_list.tostring()
+            bfloat16_list_ba = bytearray(struct.pack('%se' % len(bfloat16_list), *bfloat16_list))
+            
+            tensor.raw_data = bytes(bfloat16_list_ba)
     return tensor
 
 
